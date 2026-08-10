@@ -66,7 +66,10 @@ export function MapView({
       });
       map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), "bottom-right");
       map.touchZoomRotate.enable({ around: "center" });
-      map.on("load", () => setReady(true));
+      map.on("load", () => {
+        map.resize();
+        setReady(true);
+      });
       map.on("dragstart", onUserInteract);
       map.on("zoomstart", onUserInteract);
       mapRef.current = map;
@@ -84,6 +87,7 @@ export function MapView({
     const map = mapRef.current;
     if (!map || !ready) return;
     const project = () => {
+      map.resize();
       const target = playerPosition ?? CENTRAL_JAVA_CENTER;
       const p = map.project([target.lng, target.lat]);
       setScreen({ x: p.x, y: p.y });
