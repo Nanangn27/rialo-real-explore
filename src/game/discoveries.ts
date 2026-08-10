@@ -68,7 +68,7 @@ export const DISCOVERY_META: Record<DiscoveryKind, DiscoveryMeta> = {
 };
 
 /** Interaction range in meters. */
-export const INTERACT_RADIUS_M = 60;
+export const INTERACT_RADIUS_M = 80;
 /** Anything within this range is reported as "nearby". */
 export const NEARBY_RADIUS_M = 400;
 
@@ -118,7 +118,7 @@ export function spawnDiscoveries(origin: LatLng, count = 10, seed?: number): Wor
   return Array.from({ length: count }, (_, i) => {
     const kind = SPAWN_KINDS[Math.floor(rand() * SPAWN_KINDS.length)] as DiscoveryKind;
     const bearing = (i / count) * 360 + rand() * 28;
-    const radius = i < 3 ? 22 + rand() * 28 : 120 + rand() * 900;
+    const radius = i < 3 ? 35 + rand() * 45 : 140 + rand() * 900;
     const position = offset(origin, bearing, radius);
     return {
       id: `${base}-${i}`,

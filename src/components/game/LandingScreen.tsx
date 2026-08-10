@@ -38,7 +38,7 @@ export function LandingScreen({ onStart, address, connecting, onConnect }: Landi
           className="rise-in glass-panel mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground"
           style={{ animationDelay: "80ms" }}
         >
-          <Sparkles className="h-3 w-3 text-primary" /> Phase 1 · Central Java
+          <Sparkles className="h-3 w-3 text-primary" /> Phase 2 · Central Java
         </span>
 
         <h1
