@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import { CENTRAL_JAVA_CENTER, MAP_DEFAULTS } from "@/game/config";
-import type { LatLng } from "@/game/types";
+import type { LatLng, WorldEntity } from "@/game/types";
+import { INTERACT_RADIUS_M, distanceMeters } from "@/game/discoveries";
 import { ExplorerCharacter } from "./ExplorerCharacter";
+import { DiscoveryMarker } from "./DiscoveryMarker";
 
 const BRIGHT_OSM_STYLE = {
   version: 8 as const,
@@ -30,6 +32,9 @@ interface MapViewProps {
   follow: boolean;
   onUserInteract: () => void;
   recenterSignal: number;
+  discoveries?: WorldEntity[];
+  selectedId?: string | null;
+  onSelectDiscovery?: (entity: WorldEntity) => void;
 }
 
 export function MapView({
@@ -38,11 +43,17 @@ export function MapView({
   follow,
   onUserInteract,
   recenterSignal,
+  discoveries = [],
+  selectedId = null,
+  onSelectDiscovery,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<{ x: number; y: number } | null>(null);
+  const [markerScreens, setMarkerScreens] = useState<Record<string, { x: number; y: number }>>(
+    {},
+  );
 
   // Create the map once, client-side only.
   useEffect(() => {
@@ -90,6 +101,13 @@ export function MapView({
       const target = playerPosition ?? CENTRAL_JAVA_CENTER;
       const p = map.project([target.lng, target.lat]);
       setScreen({ x: p.x, y: p.y });
+      const next: Record<string, { x: number; y: number }> = {};
+      for (const d of discoveries) {
+        if (d.claimed) continue;
+        const q = map.project([d.position.lng, d.position.lat]);
+        next[d.id] = { x: q.x, y: q.y };
+      }
+      setMarkerScreens(next);
     };
     project();
     map.on("move", project);
@@ -111,7 +129,7 @@ export function MapView({
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [ready, playerPosition]);
+  }, [ready, playerPosition, discoveries]);
 
   // Follow the player.
   useEffect(() => {
@@ -162,6 +180,34 @@ export function MapView({
           </div>
         </div>
       )}
+
+      {/* Discovery markers */}
+      <div className="pointer-events-none absolute inset-0">
+        {discoveries.map((d) => {
+          const pos = markerScreens[d.id];
+          if (!pos || d.claimed) return null;
+          const distance = playerPosition ? distanceMeters(playerPosition, d.position) : null;
+          return (
+            <div
+              key={d.id}
+              className="absolute"
+              style={{
+                left: pos.x,
+                top: pos.y,
+                zIndex: distance != null ? Math.max(1, 2000 - Math.round(distance)) : 1,
+              }}
+            >
+              <DiscoveryMarker
+                entity={d}
+                distance={distance}
+                active={selectedId === d.id}
+                inRange={distance != null && distance <= INTERACT_RADIUS_M}
+                onSelect={() => onSelectDiscovery?.(d)}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
