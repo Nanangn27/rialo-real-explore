@@ -87,7 +87,6 @@ export function MapView({
     const map = mapRef.current;
     if (!map || !ready) return;
     const project = () => {
-      map.resize();
       const target = playerPosition ?? CENTRAL_JAVA_CENTER;
       const p = map.project([target.lng, target.lat]);
       setScreen({ x: p.x, y: p.y });
@@ -101,10 +100,15 @@ export function MapView({
       project();
     });
     if (containerRef.current) ro.observe(containerRef.current);
+    const raf = requestAnimationFrame(() => {
+      map.resize();
+      project();
+    });
     return () => {
       map.off("move", project);
       map.off("resize", project);
       map.off("idle", project);
+      cancelAnimationFrame(raf);
       ro.disconnect();
     };
   }, [ready, playerPosition]);
