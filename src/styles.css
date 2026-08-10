@@ -63,25 +63,41 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --background: oklch(0.975 0.012 230);
+  --foreground: oklch(0.19 0.015 260);
+  --card: oklch(0.995 0.004 230);
+  --card-foreground: oklch(0.19 0.015 260);
+  --popover: oklch(0.995 0.004 230);
+  --popover-foreground: oklch(0.19 0.015 260);
+  --primary: oklch(0.62 0.17 243);
+  --primary-foreground: oklch(0.99 0.005 230);
+  --secondary: oklch(0.94 0.02 230);
+  --secondary-foreground: oklch(0.24 0.02 260);
+  --muted: oklch(0.945 0.014 235);
+  --muted-foreground: oklch(0.52 0.03 250);
+  --accent: oklch(0.82 0.16 155);
+  --accent-foreground: oklch(0.2 0.05 160);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.905 0.015 240);
+  --input: oklch(0.905 0.015 240);
+  --ring: oklch(0.62 0.17 243);
+  --ink: oklch(0.17 0.008 260);
+  --sky-1: oklch(0.93 0.05 230);
+  --sky-2: oklch(0.86 0.08 225);
+  --sun: oklch(0.93 0.11 95);
+  --gradient-sky: linear-gradient(180deg, var(--sky-2) 0%, var(--sky-1) 45%, oklch(0.98 0.02 200) 100%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.66 0.17 243), oklch(0.78 0.15 200));
+  --gradient-glass: linear-gradient(
+    135deg,
+    color-mix(in oklab, white 78%, transparent),
+    color-mix(in oklab, white 52%, transparent)
+  );
+  --shadow-float: 0 18px 45px -18px color-mix(in oklab, oklch(0.4 0.1 250) 55%, transparent);
+  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 22%, transparent),
+    0 14px 40px -14px color-mix(in oklab, var(--primary) 55%, transparent);
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -140,5 +156,87 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
   }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility glass-panel {
+  background: var(--gradient-glass);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid color-mix(in oklab, white 70%, transparent);
+  box-shadow: var(--shadow-float);
+}
+
+@utility sky-bg {
+  background: var(--gradient-sky);
+}
+
+@utility btn-hero {
+  background: var(--gradient-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: var(--shadow-glow);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.25s ease;
+  &:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.06);
+  }
+  &:active {
+    transform: translateY(0) scale(0.99);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@utility float-soft {
+  animation: float-soft 5s ease-in-out infinite;
+}
+
+@utility rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@utility pulse-ring {
+  animation: pulse-ring 2.4s ease-out infinite;
 }

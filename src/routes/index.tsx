@@ -1,24 +1,69 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { LandingScreen } from "@/components/game/LandingScreen";
+import { useWallet } from "@/game/useWallet";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const GameScreen = lazy(() =>
+  import("@/components/game/GameScreen").then((m) => ({ default: m.GameScreen })),
+);
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Rialo Explorer — Explore The Real World" },
+      {
+        name: "description",
+        content:
+          "Rialo Explorer is a real-world 3D exploration game. Walk the real map of Central Java with your GPS position and a lightweight 3D explorer avatar.",
+      },
+      { property: "og:title", content: "Rialo Explorer — Explore The Real World" },
+      {
+        property: "og:description",
+        content:
+          "Real map, real GPS, real exploration. Start your Rialo Explorer journey across Central Java.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const wallet = useWallet();
+  const [started, setStarted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      {started && mounted ? (
+        <Suspense
+          fallback={
+            <div className="sky-bg grid h-[100dvh] place-items-center">
+              <p className="font-display text-sm font-semibold text-muted-foreground">
+                Loading the world…
+              </p>
+            </div>
+          }
+        >
+          <GameScreen
+            address={wallet.address}
+            connecting={wallet.connecting}
+            onConnect={wallet.connect}
+          />
+        </Suspense>
+      ) : (
+        <LandingScreen
+          onStart={() => setStarted(true)}
+          address={wallet.address}
+          connecting={wallet.connecting}
+          onConnect={wallet.connect}
+        />
+      )}
+      <Toaster position="top-center" />
+    </>
   );
 }
