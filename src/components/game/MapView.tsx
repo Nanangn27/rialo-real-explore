@@ -142,7 +142,7 @@ export function MapView({
     <div className="absolute inset-0 overflow-hidden">
       <div
         ref={containerRef}
-        className="h-full w-full [&_.maplibregl-canvas]:saturate-[1.08] [&_.maplibregl-canvas]:brightness-[1.03]"
+        className="h-full w-full [&_.maplibregl-canvas]:saturate-[1.08] [&_.maplibregl-canvas]:brightness-[1.03] [&_.maplibregl-ctrl-bottom-right]:bottom-28 [&_.maplibregl-ctrl-bottom-left]:bottom-28"
       />
       {/* daylight atmosphere wash */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,color-mix(in_oklab,var(--sun)_45%,transparent),transparent_60%)]" />
