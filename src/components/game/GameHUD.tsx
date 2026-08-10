@@ -1,32 +1,43 @@
-import { Backpack, Compass, User, Crosshair, MapPin } from "lucide-react";
+import { Backpack, Compass, User, Crosshair, MapPin, Radar, Sparkles } from "lucide-react";
 import logo from "@/assets/rialo-logo.png.asset.json";
 import { XP_PER_LEVEL } from "@/game/config";
+import { DISCOVERY_META, formatDistance } from "@/game/discoveries";
+import type { NearbyDiscovery } from "@/game/useDiscoveries";
 import { WalletButton } from "./WalletButton";
 
 interface GameHUDProps {
   level: number;
   xp: number;
+  discoveryCount: number;
+  nearby: NearbyDiscovery[];
   locationLabel: string;
   accuracy: number | null;
   address: string | null;
   connecting: boolean;
   onConnect: () => void;
   onRecenter: () => void;
+  onOpenCollection: () => void;
+  onTrackNearest: () => void;
   onPlaceholder: (feature: string) => void;
 }
 
 export function GameHUD({
   level,
   xp,
+  discoveryCount,
+  nearby,
   locationLabel,
   accuracy,
   address,
   connecting,
   onConnect,
   onRecenter,
+  onOpenCollection,
+  onTrackNearest,
   onPlaceholder,
 }: GameHUDProps) {
   const progress = Math.min(100, (xp / XP_PER_LEVEL) * 100);
+  const nearest = nearby[0];
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-5">
@@ -44,8 +55,13 @@ export function GameHUD({
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="mt-1 text-[10px] font-medium tracking-wide text-muted-foreground">
-              XP {xp} / {XP_PER_LEVEL}
+            <p className="mt-1 flex items-center gap-2 text-[10px] font-medium tracking-wide text-muted-foreground">
+              <span>
+                XP {xp} / {XP_PER_LEVEL}
+              </span>
+              <span className="flex items-center gap-1 text-foreground">
+                <Sparkles className="h-3 w-3 text-primary" /> {discoveryCount}
+              </span>
             </p>
           </div>
         </div>
@@ -59,6 +75,23 @@ export function GameHUD({
           />
         </div>
       </div>
+
+      {/* Nearby indicator */}
+      {nearest && (
+        <button
+          type="button"
+          onClick={onTrackNearest}
+          className="pointer-events-auto mx-auto flex max-w-full items-center gap-2 rounded-full glass-panel px-3 py-1.5 text-left transition-transform hover:-translate-y-0.5 active:scale-95"
+        >
+          <Radar className="h-4 w-4 shrink-0 animate-pulse text-primary" />
+          <span className="truncate text-xs font-semibold">
+            {DISCOVERY_META[nearest.kind].label} detected — {formatDistance(nearest.distance)} away
+          </span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">
+            {nearby.length} nearby
+          </span>
+        </button>
+      )}
 
       {/* Bottom bar */}
       <div className="flex flex-wrap items-end justify-between gap-2">
@@ -76,10 +109,10 @@ export function GameHUD({
           <HudButton label="Recenter" onClick={onRecenter}>
             <Crosshair className="h-5 w-5 text-primary" />
           </HudButton>
-          <HudButton label="Discovery" onClick={() => onPlaceholder("Discoveries")}>
+          <HudButton label="Discovery" onClick={onTrackNearest}>
             <Compass className="h-5 w-5 text-primary" />
           </HudButton>
-          <HudButton label="Inventory" onClick={() => onPlaceholder("Inventory")}>
+          <HudButton label="Collection" onClick={onOpenCollection} badge={discoveryCount}>
             <Backpack className="h-5 w-5 text-primary" />
           </HudButton>
           <HudButton label="Profile" onClick={() => onPlaceholder("Profile")}>
@@ -94,10 +127,12 @@ export function GameHUD({
 function HudButton({
   label,
   onClick,
+  badge,
   children,
 }: {
   label: string;
   onClick: () => void;
+  badge?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -106,9 +141,14 @@ function HudButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="glass-panel grid h-10 w-10 place-items-center rounded-2xl transition-transform hover:-translate-y-0.5 active:scale-95 sm:h-12 sm:w-12"
+      className="glass-panel relative grid h-10 w-10 place-items-center rounded-2xl transition-transform hover:-translate-y-0.5 active:scale-95 sm:h-12 sm:w-12"
     >
       {children}
+      {!!badge && (
+        <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CENTRAL_JAVA_CENTER } from "@/game/config";
+import { DISCOVERY_META, distanceMeters } from "@/game/discoveries";
+import { useDiscoveries } from "@/game/useDiscoveries";
 import { useGeolocation } from "@/game/useGeolocation";
+import type { WorldEntity } from "@/game/types";
+import { CollectionSheet } from "./CollectionSheet";
+import { DiscoveryPanel } from "./DiscoveryPanel";
 import { GameHUD } from "./GameHUD";
 import { MapView } from "./MapView";
 
@@ -16,8 +21,11 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
   const [follow, setFollow] = useState(true);
   const [recenterSignal, setRecenterSignal] = useState(0);
   const [label, setLabel] = useState("Central Java, Indonesia");
+  const [selected, setSelected] = useState<WorldEntity | null>(null);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   const position = geo.position;
+  const world = useDiscoveries(position, CENTRAL_JAVA_CENTER);
 
   useEffect(() => {
     if (geo.error) toast.error("Location unavailable", { description: geo.error });
@@ -66,9 +74,28 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
 
   const handlePlaceholder = useCallback((feature: string) => {
     toast(`${feature} unlocks in the next phase`, {
-      description: "Phase 1 focuses on the real map, GPS and your 3D explorer.",
+      description: "Quests, NPCs and on-chain rewards are coming soon.",
     });
   }, []);
+
+  const handleTrackNearest = useCallback(() => {
+    const nearest = world.nearby[0];
+    if (!nearest) {
+      toast("No signals in range", { description: "Explore further to reveal new discoveries." });
+      return;
+    }
+    setSelected(nearest);
+  }, [world.nearby]);
+
+  const handleInteract = useCallback(() => {
+    if (!selected) return;
+    const meta = DISCOVERY_META[selected.kind];
+    world.claim(selected);
+    setSelected(null);
+    toast.success(`${meta.itemName} collected!`, {
+      description: `+${meta.xp} XP · added to your collection`,
+    });
+  }, [selected, world]);
 
   const onUserInteract = useCallback(() => setFollow(false), []);
 
@@ -76,6 +103,9 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
     () => (position ? label : "Locating… · Central Java"),
     [position, label],
   );
+
+  const selectedDistance =
+    selected && position ? distanceMeters(position, selected.position) : null;
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden">
@@ -85,17 +115,39 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
         follow={follow}
         onUserInteract={onUserInteract}
         recenterSignal={recenterSignal}
+        discoveries={world.entities}
+        selectedId={selected?.id ?? null}
+        onSelectDiscovery={setSelected}
       />
       <GameHUD
-        level={1}
-        xp={0}
+        level={world.level}
+        xp={world.xp}
+        discoveryCount={world.discoveryCount}
+        nearby={world.nearby}
         locationLabel={locationLabel}
         accuracy={geo.accuracy}
         address={address}
         connecting={connecting}
         onConnect={onConnect}
         onRecenter={handleRecenter}
+        onOpenCollection={() => setCollectionOpen(true)}
+        onTrackNearest={handleTrackNearest}
         onPlaceholder={handlePlaceholder}
+      />
+      {selected && (
+        <DiscoveryPanel
+          entity={selected}
+          distance={selectedDistance}
+          onInteract={handleInteract}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      <CollectionSheet
+        open={collectionOpen}
+        onOpenChange={setCollectionOpen}
+        items={world.items}
+        discoveryCount={world.discoveryCount}
+        totalXp={world.totalXp}
       />
     </div>
   );
