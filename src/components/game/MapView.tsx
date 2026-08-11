@@ -114,6 +114,7 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    let raf = 0;
     const project = () => {
       const target = playerPosition ?? FALLBACK_CENTER;
       const p = map.project([target.lng, target.lat]);
@@ -126,24 +127,33 @@ export function MapView({
       }
       setMarkerScreens(next);
     };
+    // Coalesce reprojection into one frame — keeps panning smooth on mobile.
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        project();
+      });
+    };
     project();
-    map.on("move", project);
-    map.on("resize", project);
-    map.on("idle", project);
+    map.on("move", schedule);
+    map.on("resize", schedule);
+    map.on("idle", schedule);
     const ro = new ResizeObserver(() => {
       map.resize();
-      project();
+      schedule();
     });
     if (containerRef.current) ro.observe(containerRef.current);
-    const raf = requestAnimationFrame(() => {
+    const initial = requestAnimationFrame(() => {
       map.resize();
       project();
     });
     return () => {
-      map.off("move", project);
-      map.off("resize", project);
-      map.off("idle", project);
-      cancelAnimationFrame(raf);
+      map.off("move", schedule);
+      map.off("resize", schedule);
+      map.off("idle", schedule);
+      cancelAnimationFrame(initial);
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
     };
   }, [ready, playerPosition, discoveries]);
@@ -158,8 +168,8 @@ export function MapView({
       map.flyTo({
         center: [playerPosition.lng, playerPosition.lat],
         zoom: MAP_DEFAULTS.zoom,
-        pitch: MAP_DEFAULTS.pitch,
-        duration: 2200,
+        pitch: profile.map.pitch,
+        duration: profile.reducedMotion ? 0 : 2200,
         essential: true,
       });
       return;
@@ -167,10 +177,10 @@ export function MapView({
     if (!follow) return;
     map.easeTo({
       center: [playerPosition.lng, playerPosition.lat],
-      duration: 900,
+      duration: profile.reducedMotion ? 0 : 900,
       essential: true,
     });
-  }, [ready, playerPosition, follow]);
+  }, [ready, playerPosition, follow, profile]);
 
   // Manual recenter button.
   useEffect(() => {
@@ -180,7 +190,7 @@ export function MapView({
     map.easeTo({
       center: [target.lng, target.lat],
       zoom: Math.max(map.getZoom(), MAP_DEFAULTS.zoom),
-      pitch: MAP_DEFAULTS.pitch,
+      pitch: profileRef.current.map.pitch,
       duration: 1100,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
