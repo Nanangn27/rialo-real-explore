@@ -78,7 +78,10 @@ export function MapView({
         minZoom: MAP_DEFAULTS.minZoom,
         maxZoom: MAP_DEFAULTS.maxZoom,
         renderWorldCopies: true,
-        antialias: profileRef.current.map.antialias,
+        canvasContextAttributes: {
+          antialias: profileRef.current.map.antialias,
+          powerPreference: profileRef.current.tier === "high" ? "high-performance" : "low-power",
+        },
         fadeDuration: profileRef.current.map.fadeDuration,
         refreshExpiredTiles: false,
         // Tiles load per viewport only — nothing global is prefetched.
