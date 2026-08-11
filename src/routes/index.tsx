@@ -15,13 +15,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Rialo Explorer is a real-world 3D exploration game. Walk the real map of Central Java with your GPS position and a lightweight 3D explorer avatar.",
+          "Rialo Explorer is a real-world 3D exploration game. Walk the real world map with your GPS position and a lightweight 3D explorer avatar.",
       },
       { property: "og:title", content: "Rialo Explorer — Explore The Real World" },
       {
         property: "og:description",
         content:
-          "Real map, real GPS, real exploration. Start your Rialo Explorer journey across Central Java.",
+          "Real map, real GPS, real exploration. Start your Rialo Explorer journey anywhere on Earth.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

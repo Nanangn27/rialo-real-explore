@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CENTRAL_JAVA_CENTER } from "@/game/config";
+import { FALLBACK_CENTER } from "@/game/config";
 import { DISCOVERY_META, distanceMeters } from "@/game/discoveries";
 import { useDiscoveries } from "@/game/useDiscoveries";
 import { useGeolocation } from "@/game/useGeolocation";
@@ -20,12 +20,12 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
   const geo = useGeolocation(true);
   const [follow, setFollow] = useState(true);
   const [recenterSignal, setRecenterSignal] = useState(0);
-  const [label, setLabel] = useState("Central Java, Indonesia");
+  const [label, setLabel] = useState("Explore The World");
   const [selected, setSelected] = useState<WorldEntity | null>(null);
   const [collectionOpen, setCollectionOpen] = useState(false);
 
   const position = geo.position;
-  const world = useDiscoveries(position, CENTRAL_JAVA_CENTER);
+  const world = useDiscoveries(position, FALLBACK_CENTER);
 
   useEffect(() => {
     if (geo.error) toast.error("Location unavailable", { description: geo.error });
@@ -100,7 +100,7 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
   const onUserInteract = useCallback(() => setFollow(false), []);
 
   const locationLabel = useMemo(
-    () => (position ? label : "Locating… · Central Java"),
+    () => (position ? label : "Locating… · Explore The World"),
     [position, label],
   );
 
@@ -110,7 +110,7 @@ export function GameScreen({ address, connecting, onConnect }: GameScreenProps) 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden">
       <MapView
-        playerPosition={position ?? CENTRAL_JAVA_CENTER}
+        playerPosition={position ?? FALLBACK_CENTER}
         walking={geo.isMoving}
         follow={follow}
         onUserInteract={onUserInteract}

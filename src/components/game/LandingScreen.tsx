@@ -38,7 +38,7 @@ export function LandingScreen({ onStart, address, connecting, onConnect }: Landi
           className="rise-in glass-panel mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground"
           style={{ animationDelay: "80ms" }}
         >
-          <Sparkles className="h-3 w-3 text-primary" /> Phase 2 · Central Java
+          <Sparkles className="h-3 w-3 text-primary" /> Phase 2 · Worldwide
         </span>
 
         <h1
@@ -76,7 +76,7 @@ export function LandingScreen({ onStart, address, connecting, onConnect }: Landi
           style={{ animationDelay: "380ms" }}
         >
           <Feature icon={<MapPinned className="h-4 w-4 text-primary" />} title="Real Map">
-            Live streets and places of Central Java
+            Live streets and places worldwide
           </Feature>
           <Feature icon={<Navigation className="h-4 w-4 text-primary" />} title="Real GPS">
             Your device position drives the explorer
