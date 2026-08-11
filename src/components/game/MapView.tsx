@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
-import { CENTRAL_JAVA_CENTER, MAP_DEFAULTS } from "@/game/config";
+import { FALLBACK_CENTER, MAP_DEFAULTS, WORLD_ZOOM } from "@/game/config";
 import type { LatLng, WorldEntity } from "@/game/types";
 import { INTERACT_RADIUS_M, distanceMeters } from "@/game/discoveries";
 import { ExplorerCharacter } from "./ExplorerCharacter";
@@ -50,6 +50,7 @@ export function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [ready, setReady] = useState(false);
+  const hasFlownToPlayer = useRef(false);
   const [screen, setScreen] = useState<{ x: number; y: number } | null>(null);
   const [markerScreens, setMarkerScreens] = useState<Record<string, { x: number; y: number }>>(
     {},
@@ -66,12 +67,13 @@ export function MapView({
       const map = new maplibre.Map({
         container: containerRef.current,
         style: BRIGHT_OSM_STYLE,
-        center: [CENTRAL_JAVA_CENTER.lng, CENTRAL_JAVA_CENTER.lat],
-        zoom: MAP_DEFAULTS.zoom,
+        center: [FALLBACK_CENTER.lng, FALLBACK_CENTER.lat],
+        zoom: WORLD_ZOOM,
         pitch: MAP_DEFAULTS.pitch,
         bearing: MAP_DEFAULTS.bearing,
         minZoom: MAP_DEFAULTS.minZoom,
         maxZoom: MAP_DEFAULTS.maxZoom,
+        renderWorldCopies: true,
         attributionControl: { compact: true },
         dragRotate: true,
       });
@@ -98,7 +100,7 @@ export function MapView({
     const map = mapRef.current;
     if (!map || !ready) return;
     const project = () => {
-      const target = playerPosition ?? CENTRAL_JAVA_CENTER;
+      const target = playerPosition ?? FALLBACK_CENTER;
       const p = map.project([target.lng, target.lat]);
       setScreen({ x: p.x, y: p.y });
       const next: Record<string, { x: number; y: number }> = {};
@@ -134,7 +136,20 @@ export function MapView({
   // Follow the player.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !playerPosition || !follow) return;
+    if (!map || !ready || !playerPosition) return;
+    // First real GPS fix anywhere in the world: fly in from the world view.
+    if (!hasFlownToPlayer.current) {
+      hasFlownToPlayer.current = true;
+      map.flyTo({
+        center: [playerPosition.lng, playerPosition.lat],
+        zoom: MAP_DEFAULTS.zoom,
+        pitch: MAP_DEFAULTS.pitch,
+        duration: 2200,
+        essential: true,
+      });
+      return;
+    }
+    if (!follow) return;
     map.easeTo({
       center: [playerPosition.lng, playerPosition.lat],
       duration: 900,
@@ -146,7 +161,7 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || recenterSignal === 0) return;
-    const target = playerPosition ?? CENTRAL_JAVA_CENTER;
+    const target = playerPosition ?? FALLBACK_CENTER;
     map.easeTo({
       center: [target.lng, target.lat],
       zoom: Math.max(map.getZoom(), MAP_DEFAULTS.zoom),
