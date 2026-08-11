@@ -40,9 +40,9 @@ export function GameHUD({
   const nearest = nearby[0];
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-5">
+    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 [@media(max-height:520px)]:p-2 sm:p-5">
       {/* Top bar */}
-      <div className="flex items-start justify-between gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="pointer-events-auto glass-panel flex items-center gap-3 rounded-2xl px-3 py-2 sm:px-4 sm:py-3">
           <img src={logo.url} alt="Rialo Explorer logo" className="h-8 w-8 sm:h-9 sm:w-9" />
           <div className="min-w-0">

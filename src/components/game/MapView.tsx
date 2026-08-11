@@ -3,6 +3,7 @@ import type { Map as MLMap } from "maplibre-gl";
 import { FALLBACK_CENTER, MAP_DEFAULTS, WORLD_ZOOM } from "@/game/config";
 import type { LatLng, WorldEntity } from "@/game/types";
 import { INTERACT_RADIUS_M, distanceMeters } from "@/game/discoveries";
+import { useDeviceProfile } from "@/game/useDeviceProfile";
 import { ExplorerCharacter } from "./ExplorerCharacter";
 import { DiscoveryMarker } from "./DiscoveryMarker";
 
@@ -49,6 +50,9 @@ export function MapView({
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const profile = useDeviceProfile();
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const [ready, setReady] = useState(false);
   const hasFlownToPlayer = useRef(false);
   const [screen, setScreen] = useState<{ x: number; y: number } | null>(null);
@@ -69,16 +73,27 @@ export function MapView({
         style: BRIGHT_OSM_STYLE,
         center: [FALLBACK_CENTER.lng, FALLBACK_CENTER.lat],
         zoom: WORLD_ZOOM,
-        pitch: MAP_DEFAULTS.pitch,
+        pitch: profileRef.current.map.pitch,
         bearing: MAP_DEFAULTS.bearing,
         minZoom: MAP_DEFAULTS.minZoom,
         maxZoom: MAP_DEFAULTS.maxZoom,
         renderWorldCopies: true,
+        canvasContextAttributes: {
+          antialias: profileRef.current.map.antialias,
+          powerPreference: profileRef.current.tier === "high" ? "high-performance" : "low-power",
+        },
+        fadeDuration: profileRef.current.map.fadeDuration,
+        refreshExpiredTiles: false,
+        // Tiles load per viewport only — nothing global is prefetched.
+        maxTileCacheSize: profileRef.current.tier === "low" ? 40 : 120,
         attributionControl: { compact: true },
         dragRotate: true,
       });
       map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), "bottom-right");
       map.touchZoomRotate.enable({ around: "center" });
+      // Desktop: mouse wheel + arrow-key/+- navigation.
+      map.scrollZoom.enable({ around: "center" });
+      map.keyboard.enable();
       map.on("load", () => {
         map.resize();
         setReady(true);
@@ -99,6 +114,7 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    let raf = 0;
     const project = () => {
       const target = playerPosition ?? FALLBACK_CENTER;
       const p = map.project([target.lng, target.lat]);
@@ -111,24 +127,33 @@ export function MapView({
       }
       setMarkerScreens(next);
     };
+    // Coalesce reprojection into one frame — keeps panning smooth on mobile.
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        project();
+      });
+    };
     project();
-    map.on("move", project);
-    map.on("resize", project);
-    map.on("idle", project);
+    map.on("move", schedule);
+    map.on("resize", schedule);
+    map.on("idle", schedule);
     const ro = new ResizeObserver(() => {
       map.resize();
-      project();
+      schedule();
     });
     if (containerRef.current) ro.observe(containerRef.current);
-    const raf = requestAnimationFrame(() => {
+    const initial = requestAnimationFrame(() => {
       map.resize();
       project();
     });
     return () => {
-      map.off("move", project);
-      map.off("resize", project);
-      map.off("idle", project);
-      cancelAnimationFrame(raf);
+      map.off("move", schedule);
+      map.off("resize", schedule);
+      map.off("idle", schedule);
+      cancelAnimationFrame(initial);
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
     };
   }, [ready, playerPosition, discoveries]);
@@ -143,8 +168,8 @@ export function MapView({
       map.flyTo({
         center: [playerPosition.lng, playerPosition.lat],
         zoom: MAP_DEFAULTS.zoom,
-        pitch: MAP_DEFAULTS.pitch,
-        duration: 2200,
+        pitch: profile.map.pitch,
+        duration: profile.reducedMotion ? 0 : 2200,
         essential: true,
       });
       return;
@@ -152,10 +177,10 @@ export function MapView({
     if (!follow) return;
     map.easeTo({
       center: [playerPosition.lng, playerPosition.lat],
-      duration: 900,
+      duration: profile.reducedMotion ? 0 : 900,
       essential: true,
     });
-  }, [ready, playerPosition, follow]);
+  }, [ready, playerPosition, follow, profile]);
 
   // Manual recenter button.
   useEffect(() => {
@@ -165,7 +190,7 @@ export function MapView({
     map.easeTo({
       center: [target.lng, target.lat],
       zoom: Math.max(map.getZoom(), MAP_DEFAULTS.zoom),
-      pitch: MAP_DEFAULTS.pitch,
+      pitch: profileRef.current.map.pitch,
       duration: 1100,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,7 +200,7 @@ export function MapView({
     <div className="absolute inset-0 overflow-hidden">
       <div
         ref={containerRef}
-        className="h-full w-full [&_.maplibregl-canvas]:saturate-[1.08] [&_.maplibregl-canvas]:brightness-[1.03] [&_.maplibregl-ctrl-bottom-right]:bottom-28 [&_.maplibregl-ctrl-bottom-left]:bottom-28"
+        className="h-full w-full touch-none [&_.maplibregl-canvas]:saturate-[1.08] [&_.maplibregl-canvas]:brightness-[1.03] [&_.maplibregl-ctrl-bottom-right]:bottom-28 [&_.maplibregl-ctrl-bottom-left]:bottom-28"
       />
       {/* daylight atmosphere wash */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,color-mix(in_oklab,var(--sun)_45%,transparent),transparent_60%)]" />

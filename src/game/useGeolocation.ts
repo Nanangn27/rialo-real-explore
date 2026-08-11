@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LatLng } from "./types";
+import { useDeviceProfile, usePageVisible } from "./useDeviceProfile";
 
 export interface GeoState {
   position: LatLng | null;
@@ -23,6 +24,8 @@ function distanceMeters(a: LatLng, b: LatLng) {
 
 /** Watches the real device GPS position and derives a simple movement flag. */
 export function useGeolocation(enabled: boolean): GeoState {
+  const profile = useDeviceProfile();
+  const visible = usePageVisible();
   const [state, setState] = useState<GeoState>({
     position: null,
     accuracy: null,
@@ -43,7 +46,8 @@ export function useGeolocation(enabled: boolean): GeoState {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    // Stop the GPS watch while the tab is backgrounded — big battery saver on Android.
+    if (!enabled || !visible) return;
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       setState((s) => ({ ...s, supported: false, error: "Geolocation not supported" }));
       return;
@@ -71,14 +75,19 @@ export function useGeolocation(enabled: boolean): GeoState {
         if (moving) markIdle();
       },
       (err) => setState((s) => ({ ...s, error: err.message })),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 },
+      {
+        // Low-power devices poll less aggressively; accuracy stays good enough for gameplay.
+        enableHighAccuracy: profile.tier !== "low",
+        maximumAge: profile.tier === "low" ? 8000 : 3000,
+        timeout: 20000,
+      },
     );
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [enabled, markIdle]);
+  }, [enabled, visible, profile.tier, markIdle]);
 
   return state;
 }
