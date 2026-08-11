@@ -3,6 +3,7 @@ import type { Map as MLMap } from "maplibre-gl";
 import { FALLBACK_CENTER, MAP_DEFAULTS, WORLD_ZOOM } from "@/game/config";
 import type { LatLng, WorldEntity } from "@/game/types";
 import { INTERACT_RADIUS_M, distanceMeters } from "@/game/discoveries";
+import { useDeviceProfile } from "@/game/useDeviceProfile";
 import { ExplorerCharacter } from "./ExplorerCharacter";
 import { DiscoveryMarker } from "./DiscoveryMarker";
 
@@ -49,6 +50,9 @@ export function MapView({
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const profile = useDeviceProfile();
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const [ready, setReady] = useState(false);
   const hasFlownToPlayer = useRef(false);
   const [screen, setScreen] = useState<{ x: number; y: number } | null>(null);
@@ -69,16 +73,24 @@ export function MapView({
         style: BRIGHT_OSM_STYLE,
         center: [FALLBACK_CENTER.lng, FALLBACK_CENTER.lat],
         zoom: WORLD_ZOOM,
-        pitch: MAP_DEFAULTS.pitch,
+        pitch: profileRef.current.map.pitch,
         bearing: MAP_DEFAULTS.bearing,
         minZoom: MAP_DEFAULTS.minZoom,
         maxZoom: MAP_DEFAULTS.maxZoom,
         renderWorldCopies: true,
+        antialias: profileRef.current.map.antialias,
+        fadeDuration: profileRef.current.map.fadeDuration,
+        refreshExpiredTiles: false,
+        // Tiles load per viewport only — nothing global is prefetched.
+        maxTileCacheSize: profileRef.current.tier === "low" ? 40 : 120,
         attributionControl: { compact: true },
         dragRotate: true,
       });
       map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), "bottom-right");
       map.touchZoomRotate.enable({ around: "center" });
+      // Desktop: mouse wheel + arrow-key/+- navigation.
+      map.scrollZoom.enable({ around: "center" });
+      map.keyboard.enable();
       map.on("load", () => {
         map.resize();
         setReady(true);
