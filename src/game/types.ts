@@ -18,23 +18,41 @@ export interface PlayerState {
   locationLabel: string;
 }
 
-export type DiscoveryKind = "relic" | "mystery-box" | "portal" | "npc" | "quest-node";
+export type DiscoveryKind = "relic" | "mystery-box" | "portal" | "quest-node";
+export type NpcKind = "wanderer" | "guide" | "trader";
+export type QuestKind = "find" | "deliver" | "explore";
 
 /** Placeholder — spawned world entities arrive in Phase 2. */
-export interface WorldEntity {
+export interface Npc {
   id: string;
-  kind: DiscoveryKind;
+  kind: NpcKind;
   position: LatLng;
   title: string;
+  dialogue: string[];
+  quest?: Quest;
   claimed?: boolean;
 }
 
-/** Placeholder — inventory items arrive in Phase 2. */
+export interface Quest {
+  id: string;
+  kind: QuestKind;
+  title: string;
+  description: string;
+  objective: string;
+  targetPosition?: LatLng;
+  targetId?: string;
+  rewardXp: number;
+  rewardItem?: string;
+  completed: boolean;
+  progress: number;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
   rarity: "common" | "rare" | "epic" | "legendary";
   quantity: number;
+  quest?: Quest;
 }
 
 /** Placeholder — achievements arrive in Phase 3. */
